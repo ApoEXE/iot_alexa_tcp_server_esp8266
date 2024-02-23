@@ -12,11 +12,12 @@
 #define MAYOR 1
 #define MINOR 3
 #define PATCH 3
-#define WIFI_SSID "JAVI"
+#define WIFI_SSID "TP-Jav"
 #define WIFI_PASS "xavier1234"
-#define DEVICE "sala"
+#define DEVICE "test"
 #define TCP_PORT 7050
 #define relay D2
+#define LED 2
 AsyncWebServer server(8080);
 
 fauxmoESP fauxmo;
@@ -98,14 +99,17 @@ static void handleNewClient(void *arg, AsyncClient *client)
 
 void setup()
 {
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);
+  pinMode(LED, OUTPUT);
+  digitalWrite(LED, HIGH);
 
   pinMode(relay, OUTPUT);
 
   digitalWrite(relay, LOW);
-  Serial.begin(115200);
-  delay(20);
+  Serial.begin(9600);
+  while (!Serial)
+  {
+    ; // wait for serial port to connect. Needed for native USB
+  }
   // Serial.println("ESP8266 Server");
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS); // change it to your ussid and password
@@ -143,7 +147,7 @@ void setup()
     // Otherwise comparing the device_name is safer.
 
     if (strcmp(device_name, DEVICE) == 0) {
-      digitalWrite(LED_BUILTIN, state);
+      digitalWrite(LED, state);
       digitalWrite(relay,state);
     } });
   fauxmo.createServer(true); // not needed, this is the default value
