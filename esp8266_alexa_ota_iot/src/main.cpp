@@ -10,11 +10,11 @@
 #include "fauxmoESP.h"
 
 #define MAYOR 1
-#define MINOR 3
+#define MINOR 4
 #define PATCH 3
-#define WIFI_SSID "TP-Jav"
+#define WIFI_SSID "JAVI"
 #define WIFI_PASS "xavier1234"
-#define DEVICE "test"
+#define DEVICE "sala"
 #define TCP_PORT 7050
 #define relay D2
 #define LED 2
@@ -122,14 +122,18 @@ void setup()
   Serial.printf("[WIFI] STATION Mode, SSID: %s, IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-            { request->send(200, "text/plain", version.c_str()); });
+            {       uint32_t seconds = (uint32_t)(millis() / 1000);
+                    char reply[32];
+                    Serial.println(seconds);
+                    sprintf(reply, "%d\n", seconds);
+              request->send(200, "text/plain", reply); });
 
   AsyncElegantOTA.begin(&server); // Start ElegantOTA
   server.begin();
   // TCP SOCKET TO SEND UPTIME AND VERSION
-  AsyncServer *server_tcp = new AsyncServer(TCP_PORT); // start listening on tcp port 7050
-  server_tcp->onClient(&handleNewClient, server_tcp);
-  server_tcp->begin();
+  //AsyncServer *server_tcp = new AsyncServer(TCP_PORT); // start listening on tcp port 7050
+  //server_tcp->onClient(&handleNewClient, server_tcp);
+  //server_tcp->begin();
 
   // Serial.println("HTTP server started");
 
