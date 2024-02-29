@@ -1,30 +1,73 @@
 #include "Arduino.h"
+#include <Esp.h>
+// WATCHDOG
 
-//OTA
+// Timer
+#if !defined(ESP8266)
+#error This code is designed to run on ESP8266 and ESP8266-based boards! Please check your Tools->Board setting.
+#endif
+// Select a Timer Clock
+#define USING_TIM_DIV1 false  // for shortest and most accurate timer
+#define USING_TIM_DIV16 false // for medium time and medium accurate timer
+#define USING_TIM_DIV256 true // for longest timer but least accurate. Default
+#include "ESP8266TimerInterrupt.h"
+
+volatile uint32_t lastMillis = 0;
+
+#define TIMER_INTERVAL_MS 1000
+
+// OTA
 #include <ESP8266WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
 
-//ALEXA
+// ALEXA
 #include "fauxmoESP.h"
-#define DEVICE "sala"
+#define DEVICE "test"
 
 #define relay 4
 
 #define MAYOR 1
 #define MINOR 4
-#define PATCH 3
+#define PATCH 4
 #define WIFI_SSID "JAVI"
 #define WIFI_PASS "xavier1234"
 
-//OTA
+// Init ESP8266 timer 1
+ESP8266Timer ITimer;
+volatile bool statusLed = false;
+//=======================================================================
+void IRAM_ATTR TimerHandler()
+{
+  static bool started = false;
+
+  if (!started)
+  {
+    started = true;
+    pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(relay, OUTPUT);
+  }
+
+  digitalWrite(LED_BUILTIN, statusLed); // Toggle LED Pin
+  //digitalWrite(relay, statusLed);       // Toggle LED Pin
+  statusLed = !statusLed;
+  Serial.println("Delta ms = " + String(millis() - lastMillis));
+  lastMillis = millis();
+
+#if (TIMER_INTERRUPT_DEBUG > 0)
+  Serial.println("Delta ms = " + String(millis() - lastMillis));
+  lastMillis = millis();
+#endif
+}
+
+// OTA
 AsyncWebServer server(8080);
 String version = String(MAYOR) + "." + String(MINOR) + "." + String(PATCH);
 
-
-//ALEXA
+// ALEXA
 fauxmoESP fauxmo;
-void conf_device_alexa(){
+void conf_device_alexa()
+{
   fauxmo.onSetState([](unsigned char device_id, const char *device_name, bool state, unsigned char value)
                     {
     // Callback when a command from Alexa is received.
@@ -34,12 +77,12 @@ void conf_device_alexa(){
     // If you have to do something more involved here set a flag and process it in your main loop.
 
     Serial.printf("[MAIN] Device #%d (%s) state: %s value: %d\n", device_id, device_name, state ? "ON" : "OFF", value);
-
+//TIMER
     // Checking for device_id is simpler if you are certain about the order they are loaded and it does not change.
     // Otherwise comparing the device_name is safer.
 
     if (strcmp(device_name, DEVICE) == 0) {
-      digitalWrite(LED_BUILTIN, state);
+      //digitalWrite(LED_BUILTIN, state);
       digitalWrite(relay,state);
     } });
   fauxmo.createServer(true); // not needed, this is the default value
@@ -54,6 +97,8 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(relay, OUTPUT);
   Serial.begin(9600);
+  Serial.printf("Reset reason: %s\n", ESP.getResetReason().c_str());
+  ESP.wdtEnable(2000);
   while (!Serial)
   {
     ; // wait for serial port to connect. Needed for native USB
@@ -78,19 +123,36 @@ void setup()
   server.begin();
 
   conf_device_alexa();
+
+  Serial.println(ARDUINO_BOARD);
+  Serial.println(ESP8266_TIMER_INTERRUPT_VERSION);
+  Serial.print(F("CPU Frequency = "));
+  Serial.print(F_CPU / 1000000);
+  Serial.println(F(" MHz"));
+  // Interval in microsecs
+  if (ITimer.attachInterruptInterval(TIMER_INTERVAL_MS * 1000, TimerHandler))
+  {
+    lastMillis = millis();
+    Serial.print(F("Starting ITimer OK, millis() = "));
+    Serial.println(lastMillis);
+  }
+  else
+    Serial.println(F("Can't set ITimer correctly. Select another freq. or interval"));
 }
 
 void loop()
 {
+  ESP.wdtFeed();
   fauxmo.handle();
 
   // This is a sample code to output free heap every 5 seconds
   // This is a cheap way to detect memory leaks
   static unsigned long last = millis();
-  if (millis() - last > 5000)
+  if (millis() - last > 2000)
   {
     last = millis();
     ESP.getFreeHeap();
-    // Serial.printf("[MAIN] Free heap: %d bytes\n", ESP.getFreeHeap());
+    Serial.printf("[MAIN] Free heap: %d bytes\n", ESP.getFreeHeap());
+    Serial.println("");
   }
 }
