@@ -14,7 +14,7 @@
 
 volatile uint32_t lastMillis = 0;
 
-#define TIMER_INTERVAL_MS 1000
+#define TIMER_INTERVAL_MS 500
 
 // OTA
 #include <ESP8266WiFi.h>
@@ -29,10 +29,11 @@ volatile uint32_t lastMillis = 0;
 
 #define MAYOR 1
 #define MINOR 4
-#define PATCH 4
+#define PATCH 8
 #define WIFI_SSID "JAVI"
 #define WIFI_PASS "xavier1234"
 
+String version = String(MAYOR) + "." + String(MINOR) + "." + String(PATCH);
 // Init ESP8266 timer 1
 ESP8266Timer ITimer;
 volatile bool statusLed = false;
@@ -51,7 +52,7 @@ void IRAM_ATTR TimerHandler()
   digitalWrite(LED_BUILTIN, statusLed); // Toggle LED Pin
   //digitalWrite(relay, statusLed);       // Toggle LED Pin
   statusLed = !statusLed;
-  Serial.println("Delta ms = " + String(millis() - lastMillis));
+  Serial.println("Delta ms = " + String(millis() - lastMillis) +" "+version);
   lastMillis = millis();
 
 #if (TIMER_INTERRUPT_DEBUG > 0)
@@ -62,10 +63,10 @@ void IRAM_ATTR TimerHandler()
 
 // OTA
 AsyncWebServer server(8080);
-String version = String(MAYOR) + "." + String(MINOR) + "." + String(PATCH);
+
 
 // ALEXA
-fauxmoESP fauxmo;
+/*fauxmoESP fauxmo;
 void conf_device_alexa()
 {
   fauxmo.onSetState([](unsigned char device_id, const char *device_name, bool state, unsigned char value)
@@ -90,7 +91,7 @@ void conf_device_alexa()
   fauxmo.enable(true);       // Disabling it will prevent the devices from being discovered and switched
   fauxmo.addDevice(DEVICE);
 }
-
+*/
 void setup()
 {
   // initialize LED digital pin as an output.
@@ -122,7 +123,7 @@ void setup()
   AsyncElegantOTA.begin(&server); // Start ElegantOTA
   server.begin();
 
-  conf_device_alexa();
+  //conf_device_alexa();
 
   Serial.println(ARDUINO_BOARD);
   Serial.println(ESP8266_TIMER_INTERRUPT_VERSION);
@@ -138,15 +139,18 @@ void setup()
   }
   else
     Serial.println(F("Can't set ITimer correctly. Select another freq. or interval"));
+
+Serial.println("Delta ms = " + String(millis() - lastMillis) +" "+version);
 }
 
 void loop()
 {
-  ESP.wdtFeed();
-  fauxmo.handle();
+ // ESP.wdtFeed();
+  //fauxmo.handle();
 
   // This is a sample code to output free heap every 5 seconds
   // This is a cheap way to detect memory leaks
+  /*
   static unsigned long last = millis();
   if (millis() - last > 2000)
   {
@@ -155,4 +159,5 @@ void loop()
     Serial.printf("[MAIN] Free heap: %d bytes\n", ESP.getFreeHeap());
     Serial.println("");
   }
+  */
 }
