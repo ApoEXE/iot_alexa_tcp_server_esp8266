@@ -14,19 +14,19 @@ volatile uint32_t lastMillis = 0;
 
 // ALEXA
 #include "fauxmoESP.h"
-#define DEVICE "test"
+#define DEVICE "sala"
 
 #define relay 4
 
 #define MAYOR 1
 #define MINOR 4
-#define PATCH 17
+#define PATCH 18
 #define WIFI_SSID "JAVI"
 #define WIFI_PASS "xavier1234"
 
 bool state = 1;
 String version = String(MAYOR) + "." + String(MINOR) + "." + String(PATCH);
-
+String  debug_terminal = "";
 // OTA
 unsigned long ota_progress_millis = 0;
 AsyncWebServer server(8080);
@@ -88,7 +88,8 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(relay, OUTPUT);
   Serial.begin(9600);
-  Serial.printf("Reset reason: %s\n", ESP.getResetReason().c_str());
+  debug_terminal = "Reset reason: %s\n", ESP.getResetReason().c_str();
+  Serial.printf("%s", debug_terminal);
   ESP.wdtEnable(2000);
   while (!Serial)
   {
@@ -107,7 +108,7 @@ void setup()
             {       uint32_t seconds = (uint32_t)(millis() / 1000);
                     char reply[32];
                     Serial.println(seconds);
-                    sprintf(reply, "%d %s\n", seconds,version.c_str());
+                    sprintf(reply, "%d %s %s \n", seconds,version.c_str(), debug_terminal);
               request->send(200, "text/plain", reply); });
 
   ElegantOTA.begin(&server); // Start ElegantOTA
