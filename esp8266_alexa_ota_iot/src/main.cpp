@@ -10,7 +10,8 @@ volatile uint32_t lastMillis = 0;
 #include <ESP8266WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <ESPAsyncTCP.h>
-#include <ElegantOTA.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncElegantOTA.h>
 
 // ALEXA
 #include "fauxmoESP.h"
@@ -20,46 +21,15 @@ volatile uint32_t lastMillis = 0;
 
 #define MAYOR 1
 #define MINOR 4
-#define PATCH 18
+#define PATCH 19
 #define WIFI_SSID "JAVI"
 #define WIFI_PASS "xavier1234"
 
 bool state = 1;
 String version = String(MAYOR) + "." + String(MINOR) + "." + String(PATCH);
-String  debug_terminal = "";
+String debug_terminal = "";
 // OTA
-unsigned long ota_progress_millis = 0;
 AsyncWebServer server(8080);
-void onOTAStart()
-{
-  // Log when OTA has started
-  Serial.println("OTA update started!");
-  // <Add your own code here>
-}
-
-void onOTAProgress(size_t current, size_t final)
-{
-  // Log every 1 second
-  if (millis() - ota_progress_millis > 1000)
-  {
-    ota_progress_millis = millis();
-    Serial.printf("OTA Progress Current: %u bytes, Final: %u bytes\n", current, final);
-  }
-}
-
-void onOTAEnd(bool success)
-{
-  // Log when OTA has finished
-  if (success)
-  {
-    Serial.println("OTA update finished successfully!");
-  }
-  else
-  {
-    Serial.println("There was an error during OTA update!");
-  }
-  // <Add your own code here>
-}
 
 // ALEXA
 fauxmoESP fauxmo;
@@ -88,6 +58,7 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(relay, OUTPUT);
   Serial.begin(9600);
+  Serial.printf("\n");
   debug_terminal = "Reset reason: %s\n", ESP.getResetReason().c_str();
   Serial.printf("%s", debug_terminal);
   ESP.wdtEnable(2000);
@@ -104,19 +75,24 @@ void setup()
     ESP.restart();
   }
   Serial.printf("[WIFI] STATION Mode, SSID: %s, IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+  /*server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             {       uint32_t seconds = (uint32_t)(millis() / 1000);
                     char reply[32];
                     Serial.println(seconds);
                     sprintf(reply, "%d %s %s \n", seconds,version.c_str(), debug_terminal);
               request->send(200, "text/plain", reply); });
+              */
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+        uint32_t seconds = (uint32_t)(millis() / 1000);
+                    char reply[100];
+                    Serial.println(seconds);
+                    sprintf(reply, "%d %s", seconds,version.c_str());
 
-  ElegantOTA.begin(&server); // Start ElegantOTA
-  // ElegantOTA callbacks
-  ElegantOTA.onStart(onOTAStart);
-  ElegantOTA.onProgress(onOTAProgress);
-  ElegantOTA.onEnd(onOTAEnd);
+    request->send(200, "text/plain", reply); });
+  AsyncElegantOTA.begin(&server); // Start ElegantOTA
   server.begin();
+  Serial.println("HTTP server started");
 
   conf_device_alexa();
 
@@ -138,7 +114,8 @@ void loop()
     state = !state;
     last = millis();
     ESP.getFreeHeap();
-    Serial.printf("[MAIN] Free heap: %d bytes\n", ESP.getFreeHeap());
+    // Serial.printf("[MAIN] Free heap: %d bytes\n", ESP.getFreeHeap());
+    Serial.printf("[WIFI] STATION Mode, SSID: %s, IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
     Serial.println("");
   }
 }
