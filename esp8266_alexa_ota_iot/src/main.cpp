@@ -21,13 +21,15 @@ volatile uint32_t lastMillis = 0;
 
 #define MAYOR 1
 #define MINOR 4
-#define PATCH 19
+#define PATCH 20
 #define WIFI_SSID "JAVI"
 #define WIFI_PASS "xavier1234"
 
 bool state = 1;
 String version = String(MAYOR) + "." + String(MINOR) + "." + String(PATCH);
 String debug_terminal = "";
+//MQTT
+
 // OTA
 AsyncWebServer server(8080);
 
